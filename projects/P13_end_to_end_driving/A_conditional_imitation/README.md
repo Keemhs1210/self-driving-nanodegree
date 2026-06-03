@@ -12,17 +12,17 @@ CARLA의 **autopilot이 모범 운전**을 하는 동안 (카메라 이미지 + 
 이미지 + 명령("좌회전") + 속도  ──CNN──▶  [조향, 가속, 제동]
 ```
 
-## 2. 코드 구조
-| 파일 | 역할 | 종류 |
-|------|------|------|
-| ⭐ `practice_CIL_network.py` | **실제 논문코드 기반** CIL 분기망 (핵심만 비움) | 실제코드 실습 |
-| `collect_data.py` | CARLA 접속 → autopilot 주행 → 데이터 저장 | 자작 스켈레톤 |
-| `model.py` | CIL 네트워크(PyTorch 자작 간이판) | 자작 스켈레톤 |
-| `train.py` | 데이터셋 + 학습 루프 | 자작 스켈레톤 |
-| `drive.py` | 학습 모델을 CARLA에 배포해 주행 | 자작 스켈레톤 |
+## 2. 작업 방식 — 실제 repo에서
+작업은 **풀 repo** `reference/papers/A_imitation-learning/` 안에서 한다 (모든 파일 존재).
+> ⚠️ 이 repo는 **추론(주행) 중심**의 구버전(CARLA 0.8.x, TF1)으로 사전학습 가중치로 `run_CIL.py`를 돈다. 훈련 루프 풀스택은 C(TransFuser)/D가 더 적합.
 
-> ⭐ **핵심 실습은 `practice_CIL_network.py`** — 실제 Codevilla CIL 코드(`reference/papers/A_imitation-learning/`)에서 backbone·결합·**분기 루프**만 비운 것. 나머지 파일은 CARLA 파이프라인을 직접 굴려보고 싶을 때.
-흐름: `collect_data → train → drive`
+이 폴더 보조 자료:
+| 파일 | 역할 |
+|------|------|
+| 📋 `WORKFLOW.md` | 실제 repo로 **study→infer→metric**(CoRL2017 벤치마크) 도는 가이드 |
+| ⭐ `practice_CIL_network.py` | 실제 `agents/imitation/imitation_learning_network.py`를 **1:1로 옮겨 분기(branching)만 비운** 연습본 |
+
+> 핵심 학습 포인트 = **조건부 분기**(명령별 출력). 채운 뒤 원본과 diff. 자세한 실행은 `WORKFLOW.md`.
 
 ## 3. 내가 할 일 (체크리스트)
 - [ ] **STEP 1.** `collect_data.py` — 카메라 콜백에서 (이미지, 명령, 제어, 속도) 저장

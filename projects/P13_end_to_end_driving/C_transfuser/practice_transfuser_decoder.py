@@ -1,84 +1,95 @@
-# ───────────────────────────────────────────────────────────────────────────
-# P13-C 실습본 — 실제 TransFuser 코드 기반 (중요 포인트만 비움)
-#
-# 원본: reference/papers/C_transfuser/team_code_transfuser/model.py
-#         class LidarCenterNet 의 forward_gru() / control_pid()  (lines 611~683)
-#       (Chitta et al., TransFuser, arXiv:2205.15997)
-#
-# 비운 곳:
-#   STEP 1) forward_gru() ★자기회귀 경로점 디코딩 루프★ (궤적 예측의 핵심)
-#   STEP 2) control_pid() ★경로점 → 목표속도/조향 계산★ (궤적→제어)
-# 백본(카메라+LiDAR 트랜스포머 융합)은 원본 TransfuserBackbone 사용 → 여기선
-# '융합특징 z 가 주어졌다고 가정'하고 디코더/제어를 직접 완성한다.
-# 비교: 채운 뒤 원본 model.py 와 diff.
-# ───────────────────────────────────────────────────────────────────────────
+# ── 실습본: 실제 TransFuser(2022 브랜치) 코드 그대로, ★STEP★ 부분만 비움 ──
+# 원본(verbatim): reference/papers/C_transfuser/team_code_transfuser/model.py
+#   - class PIDController            (lines 517~535) : 그대로 (참고용)
+#   - LidarCenterNet.forward_gru     (lines 611~646) : ★자기회귀 루프★ 비움
+#   - LidarCenterNet.control_pid      (lines 648~683) : ★경로점→제어★ 비움
+#   (Chitta et al., TransFuser, arXiv:2205.15997)
+# 채운 뒤 원본 model.py 의 해당 메서드와 diff 로 대조. (백본/__init__ 등은 원본 참고)
 from collections import deque
 import numpy as np
 import torch
 import torch.nn as nn
 
 
-# ── (제공) 종/횡 제어용 PID — 원본 그대로 ──
 class PIDController(object):
     def __init__(self, K_P=1.0, K_I=0.0, K_D=0.0, n=20):
-        self._K_P, self._K_I, self._K_D = K_P, K_I, K_D
+        self._K_P = K_P
+        self._K_I = K_I
+        self._K_D = K_D
+
         self._window = deque([0 for _ in range(n)], maxlen=n)
 
     def step(self, error):
         self._window.append(error)
+
         if len(self._window) >= 2:
             integral = np.mean(self._window)
-            derivative = self._window[-1] - self._window[-2]
+            derivative = (self._window[-1] - self._window[-2])
         else:
-            integral = derivative = 0.0
+            integral = 0.0
+            derivative = 0.0
+
         return self._K_P * error + self._K_I * integral + self._K_D * derivative
 
 
-class WaypointDecoder(nn.Module):
-    """융합특징 z(B,512) + 목표점 → 경로점 pred_len개, 그리고 제어."""
-    def __init__(self, pred_len=4, gru_hidden_size=64, gru_concat_target_point=True):
-        super().__init__()
-        self.pred_len = pred_len
-        self.gru_concat_target_point = gru_concat_target_point
-        # (제공) 융합특징 압축
-        self.join = nn.Sequential(
-            nn.Linear(512, 256), nn.ReLU(inplace=True),
-            nn.Linear(256, 128), nn.ReLU(inplace=True),
-            nn.Linear(128, 64),  nn.ReLU(inplace=True),
-        )
-        self.decoder = nn.GRUCell(input_size=4 if gru_concat_target_point else 2,
-                                  hidden_size=gru_hidden_size)
-        self.output = nn.Linear(gru_hidden_size, 3)
-        self.turn_controller = PIDController(K_P=1.25, K_I=0.75, K_D=0.3, n=40)
-        self.speed_controller = PIDController(K_P=5.0, K_I=0.5, K_D=1.0, n=40)
+class LidarCenterNet(nn.Module):
+    # __init__ 및 백본(TransfuserBackbone)/헤드 등은 원본 model.py 참고(생략).
+    # self.join / self.decoder / self.output / self.pred_len /
+    # self.gru_concat_target_point / self.config / self.speed_controller /
+    # self.turn_controller 는 원본 __init__ 에서 설정됨.
 
-    # ── STEP 1. 자기회귀 경로점 디코딩 ──
     def forward_gru(self, z, target_point):
         z = self.join(z)
-        output_wp = []
-        # 초기 좌표 x = (0,0)
-        x = torch.zeros(size=(z.shape[0], 2), dtype=z.dtype, device=z.device)
+
+        output_wp = list()
+
+        # initial input variable to GRU
+        x = torch.zeros(size=(z.shape[0], 2), dtype=z.dtype).to(z.device)
+
         target_point = target_point.clone()
         target_point[:, 1] *= -1
-        # [할 일] pred_len 번 반복하며 경로점을 '누적' 생성:
-        #   - gru_concat_target_point 면 x_in = cat([x, target_point]) 아니면 x_in = x
-        #   - z = self.decoder(x_in, z)        # GRU 한 스텝
-        #   - dx = self.output(z)              # 변위 예측 (3차원 중 앞 2개가 x,y)
-        #   - x = dx[:, :2] + x                # ★누적★ (이전 점 + 변위)
-        #   - output_wp.append(x[:, :2])
-        # 끝나면 pred_wp = torch.stack(output_wp, dim=1)  반환
-        # TODO STEP 1
-        raise NotImplementedError("STEP 1: 자기회귀 경로점 루프 채우기")
 
-    # ── STEP 2. 경로점 → 제어 (PID) ──
-    def control_pid(self, waypoints, velocity):
+        # autoregressive generation of output waypoints
+        # ★STEP 1★ pred_len 번 반복하며 경로점을 '누적' 생성하라. 각 스텝에서:
+        #   - x_in: gru_concat_target_point 면 torch.cat([x, target_point], dim=1), 아니면 x
+        #   - z = self.decoder(x_in, z)        # GRUCell 한 스텝
+        #   - dx = self.output(z)              # 변위 예측
+        #   - x = dx[:,:2] + x                 # ★이전 점에 누적★
+        #   - output_wp.append(x[:,:2])
+        # 그리고: pred_wp = torch.stack(output_wp, dim=1)
+        raise NotImplementedError("★STEP 1★ 자기회귀 경로점 루프 + stack")
+
+        # pred the wapoints in the vehicle coordinate and we convert it to lidar coordinate here because the GT waypoints is in lidar coordinate
+        pred_wp[:, :, 0] = pred_wp[:, :, 0] - self.config.lidar_pos[0]
+
+        pred_brake = None
+        steer = None
+        throttle = None
+        brake = None
+
+        return pred_wp, pred_brake, steer, throttle, brake
+
+    def control_pid(self, waypoints, velocity, is_stuck):
+        ''' Predicts vehicle control with a PID controller.
+        Args:
+            waypoints (tensor): output of self.plan()
+            velocity (tensor): speedometer input
+        '''
+        assert(waypoints.size(0)==1)
         waypoints = waypoints[0].data.cpu().numpy()
+        # when training we transform the waypoints to lidar coordinate, so we need to change is back when control
+        waypoints[:, 0] += self.config.lidar_pos[0]
+
         speed = velocity[0].data.cpu().numpy()
-        # [할 일]
-        #   desired_speed = ||wp[0]-wp[1]|| * 2.0
-        #   delta = clip(desired_speed - speed, 0, clip_delta) → throttle = speed_controller.step(delta)
+
+        # ★STEP 2★ 경로점으로 목표속도·스로틀·조향을 계산하라 (원본 그대로):
+        #   desired_speed = ||wp[0]-wp[1]|| * 2.0   (is_stuck 이면 config.default_speed)
+        #   brake = (desired_speed < config.brake_speed) or (speed/desired_speed > config.brake_ratio)
+        #   delta = clip(desired_speed - speed, 0, config.clip_delta)
+        #   throttle = clip(self.speed_controller.step(delta), 0, config.clip_throttle); brake면 0
         #   aim = (wp[1]+wp[0])/2 ; angle = degrees(atan2(aim[1],aim[0]))/90
-        #   steer = turn_controller.step(angle) → clip[-1,1]
-        #   return steer, throttle, brake
-        # TODO STEP 2
-        raise NotImplementedError("STEP 2: 경로점→제어 계산 채우기")
+        #   speed<0.01 이거나 brake 면 angle=0
+        #   steer = clip(self.turn_controller.step(angle), -1, 1)
+        raise NotImplementedError("★STEP 2★ 경로점→(steer, throttle, brake) 계산")
+
+        return steer, throttle, brake

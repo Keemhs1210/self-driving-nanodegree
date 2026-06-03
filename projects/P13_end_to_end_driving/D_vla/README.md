@@ -22,18 +22,22 @@
 | **추론만 (zero/few-shot)** | 사전학습 VLM에 프롬프트로 고수준 결정(가속/정지/차선변경) 받기 | 가벼움(4-bit 추론) |
 | **LoRA 파인튜닝** | 주행 데이터(이미지+지시→행동)로 VLM에 LoRA 어댑터 학습 | 중간(4090 OK) |
 
-## 3. 코드 구조 & 할 일
-| 파일 | 역할 | 종류 |
-|------|------|------|
-| ⭐ `practice_openvla_action.py` | **실제 OpenVLA 코드 기반** — 행동 역토큰화/역정규화 (핵심만 비움) | 실제코드 실습 |
-| `vla_drive.py` | VLM 로드(4-bit) → 이미지+프롬프트 → 행동 파싱 → CARLA 제어 | 자작 스켈레톤 |
+## 3. 작업 방식 — 실제 repo에서
+풀 repo 2개가 `reference/papers/`에 클론돼 있다:
+| repo | 성격 | train/infer/metric |
+|------|------|--------------------|
+| `D_openvla/` | 범용 VLA(로봇). `vla-scripts/`에 `train.py`/`finetune.py`/`deploy.py` | LIBERO 등 벤치마크 |
+| `D_LMDrive/` | **자율주행 특화 VLA**(CARLA, 언어주행). 학습·LangAuto 평가 포함 | ★주행 metric★ |
 
-> ⭐ **핵심 실습은 `practice_openvla_action.py`** — 실제 `reference/papers/D_openvla/.../modeling_prismatic.py`의 `predict_action()`에서 **'행동을 언어토큰으로' 역토큰화·역정규화** 핵심만 비운 것. VLA의 정수(精髓).
+> 자율주행 train→infer→metric 풀파이프라인은 **LMDrive**가 더 적합(CARLA 평가/LangAuto 벤치마크).
 
-- [ ] **STEP 1.** VLM 4-bit 로드 (transformers + bitsandbytes)
-- [ ] **STEP 2.** 프롬프트 설계 — 장면+규칙 → **구조화된 행동(JSON)** 출력 유도
-- [ ] **STEP 3.** 출력 파싱 → CARLA `VehicleControl` 로 매핑
-- [ ] **STEP 4.(심화)** LoRA 파인튜닝으로 주행 특화
+이 폴더 보조 자료:
+| 파일 | 역할 |
+|------|------|
+| ⭐ `practice_openvla_action.py` | 실제 OpenVLA `modeling_prismatic.py`의 `predict_action()`을 **1:1로 옮겨 역토큰화/역정규화만 비운** 연습본 |
+| 📋 `WORKFLOW.md` | **LMDrive 기준** study→train→infer→metric(LangAuto DS) 가이드 |
+
+> 핵심 학습 포인트 = **행동을 언어토큰으로** 다루는 역토큰화/역정규화 (VLA의 정수).
 
 ## 4. 핵심 개념 & 함정
 - **VLA = VLM + 행동 헤드/디코딩**: 언어로 추론하되 끝단은 제어/궤적.

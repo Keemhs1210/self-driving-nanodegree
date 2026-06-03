@@ -13,13 +13,15 @@
 [LiDAR BEV CNN]─┘
 ```
 
-## 2. 코드 구조
-| 파일 | 역할 | 종류 |
-|------|------|------|
-| ⭐ `practice_transfuser_decoder.py` | **실제 TransFuser 코드 기반** — 경로점 GRU 디코더 + 제어 (핵심만 비움) | 실제코드 실습 |
-| `model.py` | 카메라/LiDAR 백본 + 융합 + 경로점 헤드 (자작 간이판) | 자작 스켈레톤 |
+## 2. 작업 방식 — 실제 repo에서
+작업은 **풀 repo** `reference/papers/C_transfuser/` 안에서 한다 (모든 폴더·파일 존재).
+이 폴더엔 보조 자료 2개만 둔다:
+| 파일 | 역할 |
+|------|------|
+| 📋 `WORKFLOW.md` | **study→train→infer→metric** 전 과정 실제 명령 가이드 |
+| ⭐ `practice_transfuser_decoder.py` | 실제 `model.py`의 `forward_gru`/`control_pid`를 **1:1로 옮겨 핵심만 비운** 연습본 |
 
-> ⭐ **핵심 실습은 `practice_transfuser_decoder.py`** — 실제 `reference/papers/C_transfuser/team_code_transfuser/model.py`의 `forward_gru`(자기회귀 경로점)·`control_pid`(경로점→제어)만 비운 것. 트랜스포머 백본 전체는 공식 repo 참고.
+> 흐름: `WORKFLOW.md`대로 환경/데이터/훈련/평가/metric → 학습 심화는 repo의 `model.py`를 직접 비우고 채워 다시 평가(WORKFLOW 6절).
 
 ## 3. 내가 할 일 (체크리스트)
 - [ ] **STEP 1.** 두 모달리티 백본에서 중간 특징맵 추출

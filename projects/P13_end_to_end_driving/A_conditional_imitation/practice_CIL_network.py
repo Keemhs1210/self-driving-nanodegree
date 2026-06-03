@@ -1,113 +1,198 @@
-# ───────────────────────────────────────────────────────────────────────────
-# P13-A 실습본 — 실제 논문 코드 기반 (중요 포인트만 비움)
-#
-# 원본: reference/papers/A_imitation-learning/agents/imitation/
-#         imitation_learning_network.py  (Codevilla et al., CIL, arXiv:1710.02410)
-# 비운 곳: load_imitation_learning_network() 의
-#   STEP 1) conv backbone (conv1은 예시로 남김 — 패턴 보고 conv2~4 채우기)
-#   STEP 2) speed(측정값) 처리 + 영상특징과 결합
-#   STEP 3) ★분기(branching)★  ← 조건부 모방학습의 핵심
-# 비교: 다 채운 뒤 원본과 diff 로 대조해보세요.
-# 주의: 원본은 TensorFlow 1.x (tf.contrib 등). 구조 학습이 목적.
-# ───────────────────────────────────────────────────────────────────────────
+# ── 실습본: 원본과 거의 동일. ★STEP★ 표시된 분기(branching) 부분만 비움 ──
+# 원본(verbatim): reference/papers/A_imitation-learning/agents/imitation/imitation_learning_network.py
+#   (Codevilla et al., CIL, arXiv:1710.02410)  ← 다 채운 뒤 이 파일과 diff 로 대조
 from __future__ import print_function
+
 import numpy as np
+
 import tensorflow as tf
 
 
+def weight_ones(shape, name):
+    initial = tf.constant(1.0, shape=shape, name=name)
+    return tf.Variable(initial)
+
+
 def weight_xavi_init(shape, name):
-    return tf.get_variable(name=name, shape=shape,
-                           initializer=tf.contrib.layers.xavier_initializer())
+    initial = tf.get_variable(name=name, shape=shape,
+                              initializer=tf.contrib.layers.xavier_initializer())
+    return initial
 
 
 def bias_variable(shape, name):
-    return tf.Variable(tf.constant(0.1, shape=shape, name=name))
+    initial = tf.constant(0.1, shape=shape, name=name)
+    return tf.Variable(initial)
 
 
-# ── (제공) 네트워크 빌딩블록 — 그대로 사용 (conv/pool/bn/fc/block) ──
 class Network(object):
+
     def __init__(self, dropout, image_shape):
+        """ We put a few counters to see how many times we called each function """
         self._dropout_vec = dropout
-        self._count_conv = self._count_pool = self._count_bn = 0
-        self._count_activations = self._count_dropouts = self._count_fc = 0
-        self._weights = {}; self._features = {}
+        self._image_shape = image_shape
+        self._count_conv = 0
+        self._count_pool = 0
+        self._count_bn = 0
+        self._count_activations = 0
+        self._count_dropouts = 0
+        self._count_fc = 0
+        self._count_lstm = 0
+        self._count_soft_max = 0
+        self._conv_kernels = []
+        self._conv_strides = []
+        self._weights = {}
+        self._features = {}
+
+    """ Our conv is currently using bias """
 
     def conv(self, x, kernel_size, stride, output_size, padding_in='SAME'):
         self._count_conv += 1
+
         filters_in = x.get_shape()[-1]
         shape = [kernel_size, kernel_size, filters_in, output_size]
+
         weights = weight_xavi_init(shape, 'W_c_' + str(self._count_conv))
         bias = bias_variable([output_size], name='B_c_' + str(self._count_conv))
-        return tf.add(tf.nn.conv2d(x, weights, [1, stride, stride, 1], padding=padding_in), bias)
+
+        self._weights['W_conv' + str(self._count_conv)] = weights
+        self._conv_kernels.append(kernel_size)
+        self._conv_strides.append(stride)
+
+        conv_res = tf.add(tf.nn.conv2d(x, weights, [1, stride, stride, 1], padding=padding_in,
+                                       name='conv2d_' + str(self._count_conv)), bias,
+                          name='add_' + str(self._count_conv))
+
+        self._features['conv_block' + str(self._count_conv - 1)] = conv_res
+
+        return conv_res
+
+    def max_pool(self, x, ksize=3, stride=2):
+        self._count_pool += 1
+        return tf.nn.max_pool(x, ksize=[1, ksize, ksize, 1], strides=[1, stride, stride, 1],
+                              padding='SAME', name='max_pool' + str(self._count_pool))
 
     def bn(self, x):
         self._count_bn += 1
-        return tf.contrib.layers.batch_norm(x, is_training=False, updates_collections=None,
+        return tf.contrib.layers.batch_norm(x, is_training=False,
+                                            updates_collections=None,
                                             scope='bn' + str(self._count_bn))
 
     def activation(self, x):
         self._count_activations += 1
-        return tf.nn.relu(x)
+        return tf.nn.relu(x, name='relu' + str(self._count_activations))
 
     def dropout(self, x):
+        print("Dropout", self._count_dropouts)
         self._count_dropouts += 1
-        return tf.nn.dropout(x, self._dropout_vec[self._count_dropouts - 1])
+        output = tf.nn.dropout(x, self._dropout_vec[self._count_dropouts - 1],
+                               name='dropout' + str(self._count_dropouts))
+
+        return output
 
     def fc(self, x, output_size):
         self._count_fc += 1
         filters_in = x.get_shape()[-1]
-        weights = weight_xavi_init([filters_in, output_size], 'W_f_' + str(self._count_fc))
+        shape = [filters_in, output_size]
+
+        weights = weight_xavi_init(shape, 'W_f_' + str(self._count_fc))
         bias = bias_variable([output_size], name='B_f_' + str(self._count_fc))
-        return tf.nn.xw_plus_b(x, weights, bias)
+
+        return tf.nn.xw_plus_b(x, weights, bias, name='fc_' + str(self._count_fc))
 
     def conv_block(self, x, kernel_size, stride, output_size, padding_in='SAME'):
+        print(" === Conv", self._count_conv, "  :  ", kernel_size, stride, output_size)
         with tf.name_scope("conv_block" + str(self._count_conv)):
             x = self.conv(x, kernel_size, stride, output_size, padding_in=padding_in)
-            x = self.bn(x); x = self.dropout(x)
+            x = self.bn(x)
+            x = self.dropout(x)
+
             return self.activation(x)
 
     def fc_block(self, x, output_size):
+        print(" === FC", self._count_fc, "  :  ", output_size)
         with tf.name_scope("fc" + str(self._count_fc + 1)):
-            x = self.fc(x, output_size); x = self.dropout(x)
+            x = self.fc(x, output_size)
+            x = self.dropout(x)
+            self._features['fc_block' + str(self._count_fc + 1)] = x
             return self.activation(x)
+
+    def get_weigths_dict(self):
+        return self._weights
+
+    def get_feat_tensors_dict(self):
+        return self._features
 
 
 def load_imitation_learning_network(input_image, input_data, input_size, dropout):
     branches = []
+
     x = input_image
-    nm = Network(dropout, tf.shape(x))
 
-    # ── STEP 1. Conv backbone ──
-    # conv1 (예시, 제공): (kernel, stride, out) 패턴을 익혀 conv2~4를 직접 채운다.
-    xc = nm.conv_block(x,  5, 2, 32, padding_in='VALID')
-    xc = nm.conv_block(xc, 3, 1, 32, padding_in='VALID')
-    # TODO STEP 1: conv2 = (3,2,64)→(3,1,64),  conv3 = (3,2,128)→(3,1,128),
-    #              conv4 = (3,1,256)→(3,1,256)  를 nm.conv_block 으로 이어 붙여라.
-    raise NotImplementedError("STEP 1: conv2~conv4 backbone 채우기")
+    network_manager = Network(dropout, tf.shape(x))
 
-    # reshape → fc1, fc2 (영상 특징)
+    """conv1"""  # kernel sz, stride, num feature maps
+    xc = network_manager.conv_block(x, 5, 2, 32, padding_in='VALID')
+    print(xc)
+    xc = network_manager.conv_block(xc, 3, 1, 32, padding_in='VALID')
+    print(xc)
+
+    """conv2"""
+    xc = network_manager.conv_block(xc, 3, 2, 64, padding_in='VALID')
+    print(xc)
+    xc = network_manager.conv_block(xc, 3, 1, 64, padding_in='VALID')
+    print(xc)
+
+    """conv3"""
+    xc = network_manager.conv_block(xc, 3, 2, 128, padding_in='VALID')
+    print(xc)
+    xc = network_manager.conv_block(xc, 3, 1, 128, padding_in='VALID')
+    print(xc)
+
+    """conv4"""
+    xc = network_manager.conv_block(xc, 3, 1, 256, padding_in='VALID')
+    print(xc)
+    xc = network_manager.conv_block(xc, 3, 1, 256, padding_in='VALID')
+    print(xc)
+    """mp3 (default values)"""
+
+    """ reshape """
     x = tf.reshape(xc, [-1, int(np.prod(xc.get_shape()[1:]))], name='reshape')
-    x = nm.fc_block(x, 512)
-    x = nm.fc_block(x, 512)
+    print(x)
 
-    # ── STEP 2. 속도(측정값) 처리 + 결합 ──
-    # [할 일]
-    #   speed = input_data[1]
-    #   speed = nm.fc_block(speed, 128); speed = nm.fc_block(speed, 128)
-    #   j = tf.concat([x, speed], 1); j = nm.fc_block(j, 512)
-    # TODO STEP 2
-    raise NotImplementedError("STEP 2: speed 처리 + joint 결합")
+    """ fc1 """
+    x = network_manager.fc_block(x, 512)
+    print(x)
+    """ fc2 """
+    x = network_manager.fc_block(x, 512)
 
-    # ── STEP 3. ★분기(Branching)★ — 조건부 모방학습의 핵심 ──
-    # 명령 4종은 (조향,가속,브레이크) 3출력, 마지막 'Speed' 분기는 속도 1출력.
-    # 'Speed' 분기는 영상특징 x 만 입력, 나머지는 joint j 입력.
-    branch_config = [["Steer", "Gas", "Brake"], ["Steer", "Gas", "Brake"],
+    """Process Control"""
+
+    """ Speed (measurements)"""
+    with tf.name_scope("Speed"):
+        speed = input_data[1]  # get the speed from input data
+        speed = network_manager.fc_block(speed, 128)
+        speed = network_manager.fc_block(speed, 128)
+
+    """ Joint sensory """
+    j = tf.concat([x, speed], 1)
+    j = network_manager.fc_block(j, 512)
+
+    """Start BRANCHING"""
+    branch_config = [["Steer", "Gas", "Brake"], ["Steer", "Gas", "Brake"], \
                      ["Steer", "Gas", "Brake"], ["Steer", "Gas", "Brake"], ["Speed"]]
-    # [할 일] 각 분기마다:
-    #   - "Speed" 분기: branch_output = fc_block(x,256) → fc_block(.,256)
-    #   - 그 외:        branch_output = fc_block(j,256) → fc_block(.,256)
-    #   - branches.append( nm.fc(branch_output, len(branch_config[i])) )
-    # TODO STEP 3
-    raise NotImplementedError("STEP 3: 명령별 분기 출력 구성")
+
+    for i in range(0, len(branch_config)):
+        with tf.name_scope("Branch_" + str(i)):
+            # ★STEP★ 조건부 분기 — CIL의 핵심. 아래 if/else 를 채워라.
+            #   - branch_config[i][0] == "Speed" 이면: 영상특징 x 만 사용
+            #       branch_output = network_manager.fc_block(x, 256)
+            #       branch_output = network_manager.fc_block(branch_output, 256)
+            #   - 그 외(조향/가속/브레이크)면: joint sensory j 사용
+            #       branch_output = network_manager.fc_block(j, 256)
+            #       branch_output = network_manager.fc_block(branch_output, 256)
+            #   - 그리고: branches.append(network_manager.fc(branch_output, len(branch_config[i])))
+            raise NotImplementedError("★STEP★ 분기(branching) 채우기")
+
+        print(branch_output)
 
     return branches
