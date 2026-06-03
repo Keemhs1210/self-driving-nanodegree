@@ -24,8 +24,9 @@
 | 🟧 **계획** | [P11 경로계획](P11_path_planning/) | C++ | FSM + 궤적생성 |
 | 🟥 **제어** | [P9 PID 제어](P9_PID/) | C++ | PID 조향 |
 | 🟥 **제어** | [P10 MPC 제어](P10_MPC/) | C++ | Model Predictive Control |
+| ⭐⭐ **E2E 심화** | [P13 종단간 주행](P13_end_to_end_driving/) | Python/PyTorch | CARLA E2E (RTX 4090) |
 
-> 추천 순서: **P1 → P4 → P2 → P5 → P3(E2E)** (인지 먼저) → **P6 → P7 → P8** (추적·위치) → **P9 → P10** (제어) → **P11**(계획) → **P12**(분할) → Capstone.
+> 추천 순서: **P1 → P4 → P2 → P5 → P3(E2E)** (인지 먼저) → **P6 → P7 → P8** (추적·위치) → **P9 → P10** (제어) → **P11**(계획) → **P12**(분할) → **P13**(CARLA E2E 심화).
 
 ## 환경 요약
 - **Python 3.10**: P1·P4·P5 = OpenCV/NumPy/matplotlib · P2·P3·P12 = +TensorFlow/Keras

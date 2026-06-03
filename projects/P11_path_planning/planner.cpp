@@ -1,21 +1,41 @@
-// P11 - Path Planning 핵심: 행동결정 + 궤적생성 (스켈레톤)
-// 레퍼런스: reference/.../project_11_path_planning/src/main.cpp
-// // TODO 채우기. (의사코드 수준 가이드)
+// P11 - 경로 계획 핵심: 행동결정 + 궤적생성 (직접 채우는 스켈레톤)
+// STEP 1~5 를 채운다. 설명: README.md
+// 완성본(막힐 때만): reference/.../project_11_path_planning/src/main.cpp
+//
+// 시뮬레이터 연동/좌표변환 보일러플레이트는 레퍼런스 main.cpp 에 있다.
+// 여기서는 '판단·궤적' 알고리즘 골격만 다룬다.
 
-// 1) 행동 결정: 주변차량(sensor_fusion)으로 현재 차선 상태 파악
-void behavior_planning(/* sensor_fusion, car_s, lane, ref_vel */) {
+// ─────────────────────────────────────────────────────────────
+// STEP 1~2. 행동 결정
+// ─────────────────────────────────────────────────────────────
+void behavior_planning(/* sensor_fusion, car_s, int &lane, double &ref_vel */) {
     bool too_close = false;
-    // TODO 1: 같은 차선 앞차가 일정 거리 내면 too_close=true
-    //   for each other car: 그 차의 d로 차선 판정, s 예측해 내 앞 30m 내인지 검사
 
-    // TODO 2: too_close 면 감속(ref_vel -= 0.224) + 좌/우 차선 변경 가능하면 lane 변경
-    //         아니면 가속(ref_vel < 49.5 일 때 += 0.224), 가능하면 중앙차선 복귀
+    // [STEP 1] 주변 차량 순회:
+    //   각 차의 d 로 같은 차선인지 판정, s 를 예측(이전 경로 길이만큼 진행)해
+    //   내 앞 30m 이내면 too_close = true.
+    // TODO STEP 1
+
+    // [STEP 2] 행동:
+    //   if (too_close):  ref_vel -= 0.224;   // 감속(약 5m/s^2)
+    //       그리고 왼/오른 차선이 비었으면 lane 변경
+    //   else if (ref_vel < 49.5):  ref_vel += 0.224;   // 가속
+    // TODO STEP 2
 }
 
-// 2) 궤적 생성: 앵커포인트 + spline 으로 부드러운 경로점
-void generate_trajectory(/* prev_path, lane, ref_vel, map_waypoints */) {
-    // TODO 3: 이전 경로 끝 2점 + Frenet (s+30, s+60, s+90, d=2+4*lane) 앵커 구성
-    // TODO 4: 차량 로컬좌표로 변환 후 tk::spline 피팅
-    // TODO 5: 목표 속도에 맞춰 spline 위 점 간격 계산해 next_x/y_vals 생성
-    //         (이전 경로 남은 점 먼저 채우고 나머지 새로 생성 → 연속성)
+// ─────────────────────────────────────────────────────────────
+// STEP 3~5. 궤적 생성 (Frenet + spline)
+// ─────────────────────────────────────────────────────────────
+void generate_trajectory(/* prev_path, lane, ref_vel, map_waypoints, next_x/y_vals */) {
+    // [STEP 3] 앵커포인트:
+    //   이전 경로의 마지막 2점(없으면 차 현재위치+직전 추정점)으로 시작점/방향 잡고,
+    //   Frenet 미래점 (s+30, s+60, s+90, d = 2 + 4*lane) 을 지도좌표로 변환해 추가.
+    // TODO STEP 3
+
+    // [STEP 4] 차량 로컬좌표로 변환 후 tk::spline 에 (x→y) 피팅.
+    // TODO STEP 4
+
+    // [STEP 5] 이전 경로 남은 점들을 먼저 next_x/y_vals 에 넣고(연속성),
+    //   목표 속도에 맞춰 spline 위 점 간격을 계산해 나머지를 채운다(총 50점).
+    // TODO STEP 5
 }
