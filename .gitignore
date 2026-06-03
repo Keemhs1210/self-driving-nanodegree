@@ -1,0 +1,57 @@
+# ── 외부 레퍼런스 (클론 repo + 대용량 데이터셋, ~800MB+) — 절대 커밋 안 함 ──
+# ndrplz/self-driving-car, udacity/self-driving-car 등은 각자 .git을 가진 외부 저장소다.
+reference/
+
+# ── 데이터셋 / 대용량 미디어 (Udacity SDC는 데이터가 크다) ──
+data/
+datasets/
+IMG/                 # behavioral cloning 카메라 프레임
+driving_log.csv      # behavioral cloning 주행 로그(대용량)
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar.gz
+*.7z
+
+# ── 모델 가중치 / 체크포인트 ──
+*.h5
+*.hdf5
+*.ckpt
+*.pb
+*.pth
+*.pt
+*.p
+*.pkl
+*.npy
+*.npz
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# ── C++ (Term 2~3) ──
+build/
+*.o
+*.obj
+*.exe
+*.out
+*.app
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# ── IDE / OS ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ── Claude Code 로컬 설정(개인) ──
+.claude/settings.local.json
