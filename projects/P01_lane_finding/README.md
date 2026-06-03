@@ -64,7 +64,7 @@ grayscale→blur→canny→region_of_interest→hough_lines→선그리기→오
 
 ### 실행
 ```powershell
-cd "C:\Users\kimhs\Desktop\KHS\7. Study\self-driving-nanodegree\projects\P1_lane_finding"
+cd "C:\Users\kimhs\Desktop\KHS\7. Study\self-driving-nanodegree\projects\P01_lane_finding"
 python run.py
 ```
 → `out/images/` 에 결과 6장 저장. 차선에 빨간 선이 잘 그려지면 성공.

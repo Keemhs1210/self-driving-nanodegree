@@ -5,7 +5,7 @@
 | 프로젝트 | 데이터 위치 | 상태 |
 |---------|------------|------|
 | **P1** 차선(기본) | `reference/ndrplz.../project_1.../data/` (이미지6+영상) | ✅ 바로 실행 |
-| **P2** 표지판 | `projects/P2_traffic_sign/data/` (train/valid/test.p) | ⬇️ 다운로드(123MB) |
+| **P2** 표지판 | `projects/P02_traffic_sign/data/` (train/valid/test.p) | ⬇️ 다운로드(123MB) |
 | **P3** E2E | 시뮬레이터 직접 주행 필요 (아래 안내) | ⚠️ 수동 |
 | **P4** 고급차선 | `reference/.../project_4.../` (camera_cal 21 + test 8 + 영상) | ✅ 바로 실행 |
 | **P5** 차량검출 | 사전학습 pickle 있음 + `projects/P5.../data/` (vehicles/non-vehicles) | ✅검출 / ⬇️재학습용 |
@@ -21,7 +21,7 @@
 
 ### P3 — Udacity 시뮬레이터 (E2E)
 1. [self-driving-car-sim 릴리스](https://github.com/udacity/self-driving-car-sim/releases)에서 Windows 버전 다운로드
-2. Training 모드로 직접 주행 → `driving_log.csv` + `IMG/` 생성 → `projects/P3_behavioral_cloning/data/`에 배치
+2. Training 모드로 직접 주행 → `driving_log.csv` + `IMG/` 생성 → `projects/P03_behavioral_cloning/data/`에 배치
 3. P9(PID)·P11(경로계획)도 이 시뮬레이터 계열 사용
 
 ### P12 — KITTI Road

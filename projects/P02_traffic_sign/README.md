@@ -49,7 +49,7 @@ python -m pip install tensorflow
 
 ### 실행
 ```powershell
-cd "...\projects\P2_traffic_sign"
+cd "...\projects\P02_traffic_sign"
 python traffic_sign_classifier.py
 ```
 목표: 검증 정확도(val_accuracy) **0.93 이상**.

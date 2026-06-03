@@ -47,4 +47,4 @@
 ## 환경
 - **Python 3.10** (Term 1 CV/DL) — OpenCV, NumPy, matplotlib (+ 추후 TensorFlow)
 - **C++** (Term 2~3) — 알고리즘 스터디의 g++ 환경 재사용
-- 자세한 셋업: `projects/P1_lane_finding/README.md`
+- 자세한 셋업: `projects/P01_lane_finding/README.md`

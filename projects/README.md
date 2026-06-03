@@ -12,17 +12,17 @@
 
 | 단계 | 프로젝트 | 언어 | 핵심 |
 |------|---------|------|------|
-| 🟦 **인지** | [P1 차선검출(기본)](P1_lane_finding/) | Python | Canny + Hough |
-| 🟦 **인지** | [P2 교통표지판 분류](P2_traffic_sign/) | Python/TF | CNN(LeNet) |
-| 🟦 **인지** | [P4 차선검출(고급)](P4_advanced_lane/) | Python/CV | 보정·원근·곡률 |
-| 🟦 **인지** | [P5 차량 검출](P5_vehicle_detection/) | Python | HOG+SVM / SSD |
+| 🟦 **인지** | [P1 차선검출(기본)](P01_lane_finding/) | Python | Canny + Hough |
+| 🟦 **인지** | [P2 교통표지판 분류](P02_traffic_sign/) | Python/TF | CNN(LeNet) |
+| 🟦 **인지** | [P4 차선검출(고급)](P04_advanced_lane/) | Python/CV | 보정·원근·곡률 |
+| 🟦 **인지** | [P5 차량 검출](P05_vehicle_detection/) | Python | HOG+SVM / SSD |
 | 🟦 **인지** | [P12 도로 분할](P12_road_segmentation/) | Python/TF | FCN 세그멘테이션 |
-| ⭐ **E2E** | [P3 행동 복제](P3_behavioral_cloning/) | Python/Keras | NVIDIA CNN end-to-end |
-| 🟩 **추적** | [P6 확장칼만필터](P6_EKF/) | C++ | EKF (lidar+radar) |
-| 🟩 **추적** | [P7 무향칼만필터](P7_UKF/) | C++ | UKF (CTRV) |
-| 🟨 **판단/위치** | [P8 파티클필터](P8_particle_filter/) | C++ | Localization |
+| ⭐ **E2E** | [P3 행동 복제](P03_behavioral_cloning/) | Python/Keras | NVIDIA CNN end-to-end |
+| 🟩 **추적** | [P6 확장칼만필터](P06_EKF/) | C++ | EKF (lidar+radar) |
+| 🟩 **추적** | [P7 무향칼만필터](P07_UKF/) | C++ | UKF (CTRV) |
+| 🟨 **판단/위치** | [P8 파티클필터](P08_particle_filter/) | C++ | Localization |
 | 🟧 **계획** | [P11 경로계획](P11_path_planning/) | C++ | FSM + 궤적생성 |
-| 🟥 **제어** | [P9 PID 제어](P9_PID/) | C++ | PID 조향 |
+| 🟥 **제어** | [P9 PID 제어](P09_PID/) | C++ | PID 조향 |
 | 🟥 **제어** | [P10 MPC 제어](P10_MPC/) | C++ | Model Predictive Control |
 | ⭐⭐ **E2E 심화** | [P13 종단간 주행](P13_end_to_end_driving/) | Python/PyTorch | CARLA E2E (RTX 4090) |
 
